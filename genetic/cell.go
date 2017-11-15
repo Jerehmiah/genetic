@@ -10,15 +10,15 @@ type Cell struct {
 	ObservationStream chan Event
 	hunger int
 	Death chan bool
-	ProteinName int
+	Identity int
+	identityChain chan int
 }
-var ProteinCount = 0
 var starvation = 3
 
-func NewCell(osmosis chan Protein, emission chan Protein, observation chan Event)  {
-	ProteinCount = ProteinCount + 1
+func NewCell(osmosis chan Protein, emission chan Protein, observation chan Event, identityChain chan int)  {
 	tick := time.Tick(time.Second)
-	cell := &Cell{osmosis, emission, observation, 0, make(chan bool), ProteinCount }
+	cell := &Cell{osmosis, emission, observation, 0, make(chan bool), <-identityChain, identityChain}
+	identityChain <- cell.Identity + 1
 	go func(cell *Cell){
 		CellLoop: for {
 			select {
@@ -31,7 +31,7 @@ func NewCell(osmosis chan Protein, emission chan Protein, observation chan Event
 			}	
 		}
 	}(cell)
-	observation <- Event{Born,  cell.ProteinName}
+	observation <- Event{Born,  cell.Identity}
 }
 
 func (c *Cell) Tick () {
@@ -54,21 +54,21 @@ func (c *Cell) Tick () {
 	default:
 		c.hunger = c.hunger + 1
 		if c.hunger == 1{
-		  c.ObservationStream <- Event{Hunger, c.ProteinName}
+		  c.ObservationStream <- Event{Hunger, c.Identity}
 		}
 		if c.hunger == starvation{
-			c.ObservationStream <- Event{Starve, c.ProteinName}
+			c.ObservationStream <- Event{Starve, c.Identity}
 		}
 
 		if c.hunger > starvation{
-			c.ObservationStream <- Event{Die, c.ProteinName}
+			c.ObservationStream <- Event{Die, c.Identity}
 			c.Death <- true
 		}
 	}
 }
 
 func ( c *Cell) osmosis(protein Protein){
-	c.ObservationStream <- Event{Eat, c.ProteinName}
+	c.ObservationStream <- Event{Eat, c.Identity}
 	c.react()
 }
 
@@ -78,14 +78,14 @@ func (c *Cell) react(){
 }
 
 func (c *Cell) emit(protein Protein){
-	fmt.Printf("Cell number %d emitted a protein\n", c.ProteinName)
+	fmt.Printf("Cell number %d emitted a protein\n", c.Identity)
 	c.EmissionStream <- protein
 } 
 
 func (c *Cell) split(){
-	c.ObservationStream <- Event{Split, c.ProteinName}
+	c.ObservationStream <- Event{Split, c.Identity}
 
 	//Splitting still consumes a protein, so react
 	c.react()
-	NewCell(c.OsmosisStream, c.EmissionStream, c.ObservationStream)
+	NewCell(c.OsmosisStream, c.EmissionStream, c.ObservationStream, c.identityChain)
 }
