@@ -48,12 +48,8 @@ func GetObservationStream(window *pixelgl.Window) chan Event{
 
 	go func(observer *Observer){
 		for !observer.Done{
-			select{
-			case event := <-observationStream:
-				observer.ProcessEvent(event)
-			}
+			observer.ProcessEvent(<-observationStream)
 		}
-		fmt.Println("Observer was done")
 	}(observer)
 	return observationStream
 }
@@ -61,19 +57,20 @@ func GetObservationStream(window *pixelgl.Window) chan Event{
 func (o *Observer) ProcessEvent(event Event){
 	switch event.Type{
 	case Born:
-		gopherChan := make(chan int)
+		gopherChan := make(chan int, 5)
 		o.gophers[event.Actor - 1] = gopherChan
 		go func(o *Observer){
 			angle := 0.0
 			sprite := pixel.NewSprite(GopherPic, GopherPic.Bounds())
 			last := time.Now()
-			x := float64(r.Intn(924)) + 50
-			y := float64(r.Intn(668)) + 50
+			x := float64(r.Intn(824)) + 100
+			y := float64(r.Intn(568)) + 100
 			GopherLoop: for {
 				select {
 				case n := <- gopherChan:
 					switch n{
 					case Die:
+						//close(o.gophers[event.Actor - 1])
 						break GopherLoop
 					}
 				default:

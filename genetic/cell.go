@@ -5,8 +5,8 @@ import (
 )
 
 type Cell struct {
-	OsmosisStream chan *Protein
-	EmissionStream chan *Protein
+	OsmosisStream chan Protein
+	EmissionStream chan Protein
 	ObservationStream chan Event
 	hunger int
 	Death chan bool
@@ -15,24 +15,23 @@ type Cell struct {
 var ProteinCount = 0
 var starvation = 3
 
-func NewCell(osmosis chan *Protein, emission chan *Protein, observation chan Event) *Cell {
+func NewCell(osmosis chan Protein, emission chan Protein, observation chan Event)  {
 	ProteinCount = ProteinCount + 1
 	tick := time.Tick(time.Second)
 	cell := &Cell{osmosis, emission, observation, 0, make(chan bool), ProteinCount }
 	go func(cell *Cell){
-		Loop: for {
+		CellLoop: for {
 			select {
 			case <- tick:
 				cell.Tick()
 			case <- cell.Death:
 				//This anonymous method should be the sole reference to the cell, so it will get GC'd 
 				//upon completion
-				break Loop
+				break CellLoop
 			}	
 		}
 	}(cell)
 	observation <- Event{Born,  cell.ProteinName}
-	return cell
 }
 
 func (c *Cell) Tick () {
@@ -45,7 +44,9 @@ func (c *Cell) Tick () {
 		if(c.hunger == 0){
 			select {
 			case <-c.OsmosisStream:
-				c.split()	
+				c.split()
+			default:
+			  //do nothing	
 			}
 		}
 		
@@ -66,7 +67,7 @@ func (c *Cell) Tick () {
 	}
 }
 
-func ( c *Cell) osmosis(protein *Protein){
+func ( c *Cell) osmosis(protein Protein){
 	c.ObservationStream <- Event{Eat, c.ProteinName}
 	c.react()
 }
@@ -76,8 +77,8 @@ func (c *Cell) react(){
 	time.Sleep(200* time.Millisecond)
 }
 
-func (c *Cell) emit(protein *Protein){
-	fmt.Printf("Cell number %d consumed a protein\n", c.ProteinName)
+func (c *Cell) emit(protein Protein){
+	fmt.Printf("Cell number %d emitted a protein\n", c.ProteinName)
 	c.EmissionStream <- protein
 } 
 
@@ -86,5 +87,5 @@ func (c *Cell) split(){
 
 	//Splitting still consumes a protein, so react
 	c.react()
-	_ = NewCell(c.OsmosisStream, c.EmissionStream, c.ObservationStream)
+	NewCell(c.OsmosisStream, c.EmissionStream, c.ObservationStream)
 }
