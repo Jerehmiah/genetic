@@ -49,6 +49,7 @@ func CreateEnvironment() *Environment{
 func (e *Environment) Abiogenesis(observation chan Event){
 	identityChain := make(chan int, 1)
 	identityChain <- 1
+	
 	NewCell(e.environmentStream, e.environmentStream, observation, identityChain)	
 	tick := time.Tick(time.Second)
 	idx := 0
@@ -60,7 +61,7 @@ func (e *Environment) Abiogenesis(observation chan Event){
 		observation <- Event{Feed, len(environmentProteins[idx]) }
 		e.InputProteins(environmentProteins[idx])
 		
-		idx = idx + 1
+		idx += 1
 	}
 	observation <- Event{Terminate, 0}
 	fmt.Println("Simulation concluded")

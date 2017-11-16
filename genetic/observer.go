@@ -1,14 +1,8 @@
 package genetic
 
 import(
-	"image"
-	"os"
-	_ "image/png"
-	"math/rand"
-	"time"
 	"fmt"
 	"github.com/faiface/pixel/pixelgl"
-	"github.com/faiface/pixel"
 )
 
 const (
@@ -33,18 +27,12 @@ type Observer struct{
 	Done bool
 	gophers []chan int
 }
-var GopherPic pixel.Picture
-var r = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func GetObservationStream(window *pixelgl.Window) chan Event{
 	observationStream := make(chan Event, 2000)
 	observer := &Observer{observationStream, window, false, make([]chan int, 100)}
 	
-	pic, err := loadPicture("gopher.png")
-	if err != nil {
-		panic(err)
-	}
-	GopherPic = pic
+	GetReadyForGomoebas(window)
 
 	go func(observer *Observer){
 		for !observer.Done{
@@ -57,37 +45,7 @@ func GetObservationStream(window *pixelgl.Window) chan Event{
 func (o *Observer) ProcessEvent(event Event){
 	switch event.Type{
 	case Born:
-		gopherChan := make(chan int, 5)
-		o.gophers[event.Actor - 1] = gopherChan
-		go func(o *Observer){
-			angle := 0.0
-			sprite := pixel.NewSprite(GopherPic, GopherPic.Bounds())
-			last := time.Now()
-			x := float64(r.Intn(824)) + 100
-			y := float64(r.Intn(568)) + 100
-			GopherLoop: for {
-				select {
-				case n := <- gopherChan:
-					switch n{
-					case Die:
-						//close(o.gophers[event.Actor - 1])
-						break GopherLoop
-					}
-				default:
-					dt := time.Since(last).Seconds()
-					last = time.Now()
-					angle += 0.3 * dt
-					mat := pixel.IM
-					
-					mat = mat.ScaledXY(pixel.ZV, pixel.V(0.05, 0.05))
-					mat = mat.Moved(pixel.V(x, y))
-					mat = mat.Rotated(pixel.V(x, y), angle)
-					sprite.Draw(o.window, mat)
-				}
-				
-			}
-		}(o)
-		
+		o.gophers[event.Actor - 1] = NewGomoeba()
 		fmt.Printf(Blue("Cell number %d was born\n"), event.Actor)
 	case Hunger:
 		fmt.Printf("Cell number %d is hungry\n", event.Actor)
@@ -111,15 +69,3 @@ func (o *Observer) ProcessEvent(event Event){
 	}
 }
 
-func loadPicture(path string) (pixel.Picture, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	img, _, err := image.Decode(file)
-	if err != nil {
-		return nil, err
-	}
-	return pixel.PictureDataFromImage(img), nil
-}
