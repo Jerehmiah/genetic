@@ -75,7 +75,8 @@ func (c *Eukaryote) Tick () {
 
 func ( c *Eukaryote) osmosis(protein Protein){
 	c.ObservationStream <- Event{Eat, c.Identity}
-	c.NucleusStream <- protein
+	c.NucleusStream <- "b"
+	c.NucleusStream <- "c"
 	c.react()
 }
 
