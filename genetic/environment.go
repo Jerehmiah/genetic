@@ -47,10 +47,10 @@ func CreateEnvironment() *Environment{
 }
 
 func (e *Environment) Abiogenesis(observation chan Event){
-	identityChain := make(chan int, 1)
+	identityChain := make(chan float64, 1)
 	identityChain <- 1
 
-	NewCell(e.environmentStream, observation, identityChain)	
+	NewEukaryote(e.environmentStream, observation, identityChain)	
 	tick := time.Tick(time.Second)
 	idx := 0
 	AbioLoop: for {
@@ -58,7 +58,7 @@ func (e *Environment) Abiogenesis(observation chan Event){
 		if idx >= len(environmentProteins){
 			break AbioLoop
 		}
-		observation <- Event{Feed, len(environmentProteins[idx]) }
+		observation <- Event{Feed, float64(len(environmentProteins[idx])) }
 		e.InputProteins(environmentProteins[idx])
 		
 		idx += 1

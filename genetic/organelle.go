@@ -3,7 +3,7 @@ import (
   "time"
 )
 
-type Cell struct {
+type Organelle struct {
 	OsmosisStream chan Protein
 	ObservationStream chan Event
 	hunger int
@@ -11,28 +11,27 @@ type Cell struct {
 	Identity float64
 	identityChain chan float64
 }
-var starvation = 3
 
-func NewCell(osmosis chan Protein, observation chan Event, identityChain chan float64)  {
+func NewOrganelle(osmosis chan Protein, observation chan Event, identityChain chan float64)  {
 	tick := time.Tick(time.Second)
-	cell := &Cell{osmosis, observation, 0, make(chan bool), <-identityChain, identityChain}
-	identityChain <- cell.Identity + 1
-	go func(cell *Cell){
-		CellLoop: for {
+	organelle := &Organelle{osmosis, observation, 0, make(chan bool), <-identityChain, identityChain}
+	identityChain <- organelle.Identity + 0.1
+	go func(organelle *Organelle){
+		OrganelleLoop: for {
 			select {
 			case <- tick:
-				cell.Tick()
-			case <- cell.Death:
-				//This anonymous method should be the sole reference to the cell, so it will get GC'd 
+				organelle.Tick()
+			case <- organelle.Death:
+				//This anonymous method should be the sole reference to the organelle, so it will get GC'd 
 				//upon completion
-				break CellLoop
+				break OrganelleLoop
 			}	
 		}
-	}(cell)
-	observation <- Event{Born,  cell.Identity}
+	}(organelle)
+	observation <- Event{Born,  organelle.Identity}
 }
 
-func (c *Cell) Tick () {
+func (c *Organelle) Tick () {
 	select {
 	case protein := <- c.OsmosisStream:
 		
@@ -65,17 +64,17 @@ func (c *Cell) Tick () {
 	}
 }
 
-func ( c *Cell) osmosis(protein Protein){
+func ( c *Organelle) osmosis(protein Protein){
 	c.ObservationStream <- Event{Eat, c.Identity}
 	c.react()
 }
 
-func (c *Cell) react(){
+func (c *Organelle) react(){
 	//Do something that takes 200 ms
 	time.Sleep(200* time.Millisecond)
 }
 
-func (c *Cell) split(){
+func (c *Organelle) split(){
 	c.ObservationStream <- Event{Split, c.Identity}
 
 	//Splitting still consumes a protein, so react

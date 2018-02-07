@@ -1,7 +1,9 @@
 package genetic
 
 import(
+	
 	"fmt"
+	"math"
 	"github.com/faiface/pixel/pixelgl"
 )
 
@@ -18,7 +20,7 @@ const (
 
 type Event struct{
 	Type int
-	Actor int
+	Actor float64
 }
 
 type Observer struct{
@@ -43,23 +45,32 @@ func GetObservationStream(window *pixelgl.Window) chan Event{
 }
 
 func (o *Observer) ProcessEvent(event Event){
+	isOrganelle := !(math.Trunc(event.Actor) == event.Actor)
+	display :=  "Eukaryote"
+	if isOrganelle {
+		display = "Organelle"
+	}
 	switch event.Type{
 	case Born:
-		o.gophers[event.Actor - 1] = NewGomoeba()
-		fmt.Printf(Blue("Cell number %d was born\n"), event.Actor)
+		fmt.Printf(Blue("%s number %f was born\n"), display, event.Actor)
+		if !isOrganelle{
+			o.gophers[int(event.Actor - 1)] = NewGomoeba()
+		}
 	case Hunger:
-		fmt.Printf("Cell number %d is hungry\n", event.Actor)
+		fmt.Printf("%s number %f is hungry\n", display, event.Actor)
 	case Starve:
-	  	fmt.Printf(Yellow("Cell number %d is starving\n"), event.Actor)
+	  	fmt.Printf(Yellow("%s number %f is starving\n"), display, event.Actor)
 	case Split:
-		fmt.Printf("Cell number %d consumed an additional protein, and is splitting\n", event.Actor	)
+		fmt.Printf("%s number %f consumed an additional protein, and is splitting\n", display, event.Actor	)
 	case Die:
-		o.gophers[event.Actor - 1] <- Die
-		fmt.Printf(Red("Cell number %d died\n"), event.Actor)
+		if !isOrganelle {
+			o.gophers[int(event.Actor - 1)] <- Die	
+		}
+		fmt.Printf(Red("%s number %f died\n"), display, event.Actor)
 	case Eat:
-		fmt.Printf("Cell number %d consumed a protein\n", event.Actor)
+		fmt.Printf("%s number %f consumed a protein\n", display, event.Actor)
 	case Feed:
-		fmt.Printf(White("***********  Adding %d proteins\n"), event.Actor)
+		fmt.Printf(White("***********  Adding %f proteins\n"), event.Actor)
 	case Terminate:
 		fmt.Println("Received Terminate signal")
 		o.Done = true
